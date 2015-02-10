@@ -1,8 +1,9 @@
 #!/usr/bin/env python2
-import time, socket, urllib2
+import time, socket, urllib2, subprocess
 #In secrets.py, have insteon_username = and insteon_password = 
 from secrets import insteon_password, insteon_username
 #Name your groups
+hdmi_cec = True
 groupnames = {'05': 'Games', '08': 'Media Room', '10': 'Movies'}
 default_color = "[65,57,27]"
 insteon_url = "http://192.168.1.160:25105/"
@@ -15,6 +16,7 @@ location = ""
 brightness = ""
 groupnum = ""
 commandlist = []
+cec_devicelist = ["0", "5"] #0 is my tv, 5 is my reciever
 
 password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
 password_mgr.add_password(None,insteon_url,insteon_username,insteon_password)
@@ -30,6 +32,20 @@ def send_hyperion( line ):
 	s.send(line)
 	s.close()
 	
+def send_cec(command):
+	if hdmi_cec:
+		if command == "on":
+			for item in cec_devicelist:
+				cec_string = 'echo "on ' + item + '" |cec-client -s'
+				n = subprocess.Popen(cec_string, shell=True)
+				n.wait()
+		elif command == "off":
+			for item in cec_devicelist:
+				cec_string = 'echo "standby ' + item + '" |cec-client -s'
+				n = subprocess.Popen(cec_string, shell=True)
+				n.wait()
+			cec_string = 'echo "standby ' + "0" + '" |cec-client -s'
+			n = subprocess.Popen(cec_string, shell=True)
 def color_on():
 	line = '{"command": "color", "priority": 0, "color": ' + default_color + '}\n'
 	send_hyperion(line)
@@ -52,8 +68,11 @@ def sceneCommand(scene, command):
 	if name == "Games" or name == "Movies" :
 		if command == "on":
 			color_on()
+			send_cec(command)
+
 		elif command == "off":
 			color_off()
+			send_cec(command)
 		print "Turning " +command + " backlight for " + name
 	elif groupnames[scene] == "Media Room":
 		color_off()
@@ -162,7 +181,7 @@ def processInsteonBuffer( buffstatus ):
 endstring = ""
 
 while True:
-	response = urllib2.urlopen(insteon_url + '/buffstatus.xml')
+	response = urllib2.urlopen('http://192.168.1.160:25105/buffstatus.xml')
 	body = response.read()
 	newstring = body[14:216]
 	if newstring != endstring:
