@@ -162,7 +162,7 @@ def processInsteonBuffer( buffstatus ):
 endstring = ""
 
 while True:
-	response = urllib2.urlopen('http://192.168.1.160:25105/buffstatus.xml')
+	response = urllib2.urlopen(insteon_url + '/buffstatus.xml')
 	body = response.read()
 	newstring = body[14:216]
 	if newstring != endstring:
