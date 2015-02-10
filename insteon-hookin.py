@@ -4,7 +4,7 @@ import time, socket, urllib2, subprocess
 from secrets import insteon_password, insteon_username
 #Name your groups
 hdmi_cec = True
-groupnames = {'05': 'Games', '08': 'Media Room', '10': 'Movies'}
+groupnames = {'05': 'Games', '08': 'Media Room', '10': 'Movies', '0A': 'Whole House'}
 default_color = "[65,57,27]"
 insteon_url = "http://192.168.1.160:25105/"
 hyperion_url = "192.168.1.169"
@@ -25,10 +25,12 @@ opener = urllib2.build_opener(handler)
 opener.open(insteon_url + "buffstatus.xml")
 urllib2.install_opener(opener)
 
+def inst_log( string ):
+	print string
 def send_hyperion( line ):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((hyperion_url, 19444))
-	print "sending " + line
+	inst_log( "sending " + line)
 	s.send(line)
 	s.close()
 	
@@ -59,12 +61,10 @@ def split_by_n( seq, n ):
     while seq:
         yield seq[:n]
         seq = seq[n:]
-def inst_log( string ):
-	print string
 def error():
 	print "WHAT HAPPENED ERROR"
 def sceneCommand(scene, command):
-	name = groupnames[scene]
+	name = groupnames.get(scene, "Unknown")
 	if name == "Games" or name == "Movies" :
 		if command == "on":
 			color_on()
@@ -73,9 +73,11 @@ def sceneCommand(scene, command):
 		elif command == "off":
 			color_off()
 			send_cec(command)
-		print "Turning " +command + " backlight for " + name
-	elif groupnames[scene] == "Media Room":
+		inst_log( "Turning " +command + " backlight for " + name)
+	elif name == "Media Room" or name == "Whole House":
 		color_off()
+	else:
+		inst_log( scene + " not recognized")
 	
 def processDeviceCommand():
 	global i, device_id,command, brightness, location, groupnum, commandlist
@@ -136,7 +138,7 @@ def processInsteonBuffer( buffstatus ):
 		#if i == 0 and commandlist[i] != "02":
 		#	processDeviceCommand()
 		if commandlist[i] == "A0": #end of string
-			print "END OF STRING"
+			inst_log( "END OF STRING")
 			break
 		elif commandlist[i] == "02": #Start of new command
 			i += 1
@@ -186,7 +188,7 @@ while True:
 	newstring = body[14:216]
 	if newstring != endstring:
 		endstring = newstring
-		print endstring
+		inst_log( endstring)
 		processInsteonBuffer(endstring)
-		print "Processed Insteon Buffer"
+		inst_log( "Processed Insteon Buffer")
 	time.sleep(3)
