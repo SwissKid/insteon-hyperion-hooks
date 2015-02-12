@@ -83,7 +83,11 @@ def processDeviceCommand():
 	global i, device_id,command, brightness, location, groupnum, commandlist
 	device_id = ''.join(map(str, commandlist[i:i+3]))
 	i += 3
-	if commandlist[i] == "05":
+	if i >= len(commandlist):
+		inst_log( "WAT ITS THE END")
+	elif commandlist[i] == "A0": #end of string
+		inst_log( "END OF STRING")
+	elif commandlist[i] == "05":
 		i += 1 #Flag
 		if commandlist[i] == "32": #Dual outlet On
 			i += 1 #Group Byte
